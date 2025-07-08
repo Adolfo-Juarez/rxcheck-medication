@@ -7,6 +7,21 @@ import { Op } from "sequelize";
 export default class SequelizeMedicationRepository
   implements MedicationRepository
 {
+  async bulkGetByIds(ids: string[]): Promise<Medication[]> {
+    try {
+      const medications = await MedicationModel.findAll({
+        where: {
+          id: {
+            [Op.in]: ids,
+          },
+        },
+      });
+      return medications.map((med) => med.toJSON() as Medication);
+    } catch (Error: any) {
+      console.error("Error in bulkGetByIds:", Error.message);
+      return [];
+    }
+  }
   async bulkSave(medications: CreateMedication[]): Promise<number | null> {
     try {
       // Create valid model objects with required fields including generated IDs if needed

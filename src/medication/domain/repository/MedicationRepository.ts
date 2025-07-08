@@ -6,4 +6,5 @@ export default interface MedicationRepository {
   search(query: string): Promise<Medication[]>;
   save(medication: CreateMedication): Promise<Medication | null>;
   bulkSave(medications: CreateMedication[]): Promise<number | null>;
+  bulkGetByIds(ids: string[]): Promise<Medication[]>;
 }
