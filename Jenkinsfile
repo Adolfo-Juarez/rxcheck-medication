@@ -41,7 +41,7 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EO
     if [ ! -d "${REMOTE_PATH}" ]; then
         git clone -b ${params.GIT_BRANCH} ${params.GIT_REPO} ${REMOTE_PATH}
     else
-        cd ${REMOTE_PATH}
+        cd \${REMOTE_PATH}
         git fetch --all
         git reset --hard origin/${params.GIT_BRANCH}
     fi
@@ -61,7 +61,7 @@ chmod 600 "$SSH_KEY_FILE"
 ssh-keygen -f "/var/lib/jenkins/.ssh/known_hosts" -R "$EC2_HOST" || true
 ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EOF
     set -e
-    cd ${REMOTE_PATH}
+    cd \${REMOTE_PATH}
 
     # Crear red si no existe
     if ! sudo docker network ls --format '{{.Name}}' | grep -q '^rx-production-network$'; then
