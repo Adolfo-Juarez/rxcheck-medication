@@ -82,6 +82,12 @@ EOF
                         envContent = individualVars.join('\n')
                     }
 
+                    // ✅ Agregar manualmente las variables requeridas desde params
+                    envContent += """
+PORT=${params.CONTAINER_PORT}
+NODE_NAME=${params.APP_KEY}
+""".trim()
+
                     // Crear el archivo solo si hay contenido
                     if (envContent?.trim()) {
                         writeFile file: 'env_content.sh', text: envContent
