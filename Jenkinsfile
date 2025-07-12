@@ -13,8 +13,8 @@ pipeline {
                                                   usernameVariable: 'EC2_USER')]) {
                     sh """
 chmod 600 "$SSH_KEY_FILE"
-ssh-keygen -f "/var/lib/jenkins/.ssh/known_hosts" -R "${params.EC2_HOST}" || true
-ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"${params.EC2_HOST}" << EOF
+ssh-keygen -f "/var/lib/jenkins/.ssh/known_hosts" -R "$EC2_HOST" || true
+ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EOF
     set -e
     export DEBIAN_FRONTEND=noninteractive
 
@@ -58,8 +58,8 @@ EOF
                                                   usernameVariable: 'EC2_USER')]) {
                     sh """
 chmod 600 "$SSH_KEY_FILE"
-ssh-keygen -f "/var/lib/jenkins/.ssh/known_hosts" -R "${params.EC2_HOST}" || true
-ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"${params.EC2_HOST}" << EOF
+ssh-keygen -f "/var/lib/jenkins/.ssh/known_hosts" -R "$EC2_HOST" || true
+ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EOF
     set -e
     cd ${REMOTE_PATH}
 
