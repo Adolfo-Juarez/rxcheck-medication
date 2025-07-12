@@ -16,7 +16,7 @@ chmod 600 "$SSH_KEY_FILE"
 ssh-keygen -f "/var/lib/jenkins/.ssh/known_hosts" -R "$EC2_HOST" || true
 ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EOF
     set -ex
-    
+
     export DEBIAN_FRONTEND=noninteractive
 
     # Instalar Docker si no existe
@@ -48,6 +48,65 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EO
     fi
 EOF
                     """
+                                                  }
+            }
+        }
+
+        stage('Crear archivo .env en EC2') {
+            steps {
+                script {
+                    def envContent = ''
+                    try {
+                        // Buscar las variables deseadas directamente
+                        envContent = sh(script: """
+                    env | grep -E '^(NODE_ENV|NODE_NAME|PORT|RABBITMQ_URL|RABBITMQ_QUEUE|MYSQL_|MAIL_|DISCORD_|BUCKET_)'
+                """, returnStdout: true).trim()
+            } catch (Exception e) {
+                        // En caso de error, fallback a búsqueda individual
+                        def individualVars = []
+
+                        ['NODE_ENV', 'NODE_NAME', 'PORT', 'RABBITMQ_URL', 'RABBITMQ_QUEUE'].each { varName ->
+                            def varValue = sh(script: "echo \$${varName}", returnStdout: true).trim()
+                            if (varValue) {
+                                individualVars.add("${varName}=${varValue}")
+                            }
+                        }
+
+                        ['MYSQL_', 'MAIL_', 'DISCORD_', 'BUCKET_'].each { prefix ->
+                            def found = sh(script: "env | grep '^${prefix}' || true", returnStdout: true).trim()
+                            if (found) {
+                                individualVars.addAll(found.split('\n'))
+                            }
+                        }
+
+                        envContent = individualVars.join('\n')
+                    }
+
+                    // Crear el archivo solo si hay contenido
+                    if (envContent?.trim()) {
+                        writeFile file: 'env_content.sh', text: envContent
+
+                        withCredentials([sshUserPrivateKey(credentialsId: params.CREDENTIAL_ID,
+                                                  keyFileVariable: 'SSH_KEY_FILE',
+                                                  usernameVariable: 'EC2_USER')]) {
+                            sh """
+chmod 600 "$SSH_KEY_FILE"
+ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" 'cat > ${REMOTE_PATH}/.env' << 'EOF'
+${envContent}
+EOF
+                    """
+                                                  }
+            } else {
+                        // Crear un archivo .env vacío como fallback
+                        withCredentials([sshUserPrivateKey(credentialsId: params.CREDENTIAL_ID,
+                                                  keyFileVariable: 'SSH_KEY_FILE',
+                                                  usernameVariable: 'EC2_USER')]) {
+                            sh """
+chmod 600 "$SSH_KEY_FILE"
+ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" 'echo "# No environment variables found" > ${REMOTE_PATH}/.env'
+                    """
+                                                  }
+                    }
                 }
             }
         }
@@ -70,15 +129,12 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EO
         sudo docker network create rx-production-network
     fi
 
-    # Crear archivo .env temporal con las variables de entorno del entorno de Jenkins
-    env | grep -E '^(NODE_ENV|NODE_NAME|PORT|RABBITMQ_URL|RABBITMQ_QUEUE|MYSQL_|MAIL_|DISCORD_|BUCKET_)' > .env
-
     # Reconstruir imagen
     sudo docker build --env-file .env -t "${params.APP_KEY}" .
 
     # Usar el app-key como nombre de contenedor
     # Parar y eliminar contenedor si existe
-    if sudo docker ps -a --format '{{.Names}}' | grep -q '^${params.APP_KEY}\$'; then 
+    if sudo docker ps -a --format '{{.Names}}' | grep -q '^${params.APP_KEY}\$'; then
         sudo docker stop ${params.APP_KEY} || true
         sudo docker rm ${params.APP_KEY} || true
     fi
@@ -91,14 +147,13 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EO
         --env-file .env \
         "${params.APP_KEY}"
 
-
     sudo docker ps --filter "name=${params.APP_KEY}"
 
     # Eliminar archivos temporales
     sudo docker system prune -f
 EOF
                     """
-                }
+                                                  }
             }
         }
     }
