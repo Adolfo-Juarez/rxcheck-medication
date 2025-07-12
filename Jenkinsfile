@@ -157,6 +157,7 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EO
 
     # Eliminar archivos temporales
     sudo docker system prune -f
+    sudo rm .env
 EOF
                     """
                                                   }
