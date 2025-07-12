@@ -130,7 +130,7 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EO
     fi
 
     # Reconstruir imagen
-    sudo docker build --env-file .env -t "${params.APP_KEY}" .
+    sudo docker build -t "${params.APP_KEY}" .
 
     # Usar el app-key como nombre de contenedor
     # Parar y eliminar contenedor si existe
