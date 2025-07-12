@@ -72,7 +72,7 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EO
     env | grep -E '^(NODE_ENV|NODE_NAME|PORT|RABBITMQ_URL|RABBITMQ_QUEUE|MYSQL_|MAIL_|DISCORD_|BUCKET_)' > .env
 
     # Reconstruir imagen
-    sudo docker build --env-file .env -t "${params.$APP_KEY}" .
+    sudo docker build --env-file .env -t "${params.APP_KEY}" .
 
     // Usar el app-key como nombre de contenedor
     # Parar y eliminar contenedor si existe
@@ -83,11 +83,11 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EO
 
     # Iniciar nuevo contenedor
     sudo docker run -d \
-        --name "${params.$APP_KEY}" \
+        --name "${params.APP_KEY}" \
         --network rx-production-network \
         -p ${params.HOST_PORT}:${params.CONTAINER_PORT} \
         --env-file .env \
-        "${params.$APP_KEY}"
+        "${params.APP_KEY}"
 
 
     sudo docker ps --filter "name=${params.APP_KEY}"
