@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        REMOTE_PATH = "/home/ubuntu/cart-service"
+        REMOTE_PATH = "/home/ubuntu/${APP_KEY}"
     }
 
     stages {
@@ -63,19 +63,37 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"${params.EC2_HOS
     set -e
     cd ${REMOTE_PATH}
 
-    # Reconstruir imagen
-    sudo docker build --build-arg JWT_SECRET="${params.JWT_SECRET}" --build-arg DATABASE_NAME="${params.DATABASE_NAME}" --build-arg DATABASE_USER="${params.DATABASE_USER}" --build-arg DATABASE_PASSWORD="${params.DATABASE_PASSWORD}" --build-arg DATABASE_HOST="${params.DATABASE_HOST}" --build-arg MAIL_HOST="${params.MAIL_HOST}" --build-arg MAIL_PORT="${params.MAIL_PORT}" --build-arg MAIL_USER="${params.MAIL_USER}" --build-arg MAIL_PASSWORD="${params.MAIL_PASSWORD}" --build-arg USER_SERVICE="${params.USER_SERVICE}" --build-arg PRODUCT_SERVICE="${params.PRODUCT_SERVICE}" --build-arg CART_SERVICE="${params.CART_SERVICE}" --build-arg ORDER_SERVICE="${params.ORDER_SERVICE}" -t cart-service .
+    # Crear red si no existe
+    if ! sudo docker network ls --format '{{.Name}}' | grep -q '^rx-production-network$'; then
+        sudo docker network create rx-production-network
+    fi
 
+    # Crear archivo .env temporal con las variables de entorno del entorno de Jenkins
+    env | grep -E '^(NODE_ENV|NODE_NAME|PORT|RABBITMQ_URL|RABBITMQ_QUEUE|MYSQL_|MAIL_|DISCORD_|BUCKET_)' > .env
+
+    # Reconstruir imagen
+    sudo docker build --env-file .env -t "$APP_KEY" .
+
+    // Usar el app-key como nombre de contenedor
     # Parar y eliminar contenedor si existe
-    if sudo docker ps -a --format '{{.Names}}' | grep -q '^cart-service\$'; then
-        sudo docker stop cart-service || true
-        sudo docker rm cart-service || true
+    if sudo docker ps -a --format '{{.Names}}' | grep -q '^${APP_KEY}\$'; then 
+        sudo docker stop ${APP_KEY} || true
+        sudo docker rm ${APP_KEY} || true
     fi
 
     # Iniciar nuevo contenedor
-    sudo docker run -d --name cart-service -p 3032:3032 cart-service
+    sudo docker run -d \
+        --name "$APP_KEY" \
+        --network rx-production-network \
+        -p ${params.HOST_PORT}:${params.CONTAINER_PORT} \
+        --env-file .env \
+        "$APP_KEY"
 
-    sudo docker ps --filter "name=cart-service"
+
+    sudo docker ps --filter "name=${APP_KEY}"
+
+    # Eliminar archivos temporales
+    sudo docker system prune -f
 EOF
                     """
                 }
