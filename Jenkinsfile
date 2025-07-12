@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        REMOTE_PATH = "/home/ubuntu/${APP_KEY}"
+        REMOTE_PATH = "/home/ubuntu/${params.APP_KEY}"
     }
 
     stages {
@@ -72,25 +72,25 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"${params.EC2_HOS
     env | grep -E '^(NODE_ENV|NODE_NAME|PORT|RABBITMQ_URL|RABBITMQ_QUEUE|MYSQL_|MAIL_|DISCORD_|BUCKET_)' > .env
 
     # Reconstruir imagen
-    sudo docker build --env-file .env -t "$APP_KEY" .
+    sudo docker build --env-file .env -t "${params.$APP_KEY}" .
 
     // Usar el app-key como nombre de contenedor
     # Parar y eliminar contenedor si existe
-    if sudo docker ps -a --format '{{.Names}}' | grep -q '^${APP_KEY}\$'; then 
-        sudo docker stop ${APP_KEY} || true
-        sudo docker rm ${APP_KEY} || true
+    if sudo docker ps -a --format '{{.Names}}' | grep -q '^${params.APP_KEY}\$'; then 
+        sudo docker stop ${params.APP_KEY} || true
+        sudo docker rm ${params.APP_KEY} || true
     fi
 
     # Iniciar nuevo contenedor
     sudo docker run -d \
-        --name "$APP_KEY" \
+        --name "${params.$APP_KEY}" \
         --network rx-production-network \
         -p ${params.HOST_PORT}:${params.CONTAINER_PORT} \
         --env-file .env \
-        "$APP_KEY"
+        "${params.$APP_KEY}"
 
 
-    sudo docker ps --filter "name=${APP_KEY}"
+    sudo docker ps --filter "name=${params.APP_KEY}"
 
     # Eliminar archivos temporales
     sudo docker system prune -f
