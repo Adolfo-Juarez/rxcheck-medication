@@ -64,7 +64,7 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EO
     cd \${REMOTE_PATH}
 
     # Crear red si no existe
-    if ! sudo docker network ls --format '{{.Name}}' | grep -q '^rx-production-network$'; then
+    if ! sudo docker network ls --format '{{.Name}}' | grep -q '^rx-production-network\$'; then
         sudo docker network create rx-production-network
     fi
 
@@ -74,7 +74,7 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER"@"$EC2_HOST" << EO
     # Reconstruir imagen
     sudo docker build --env-file .env -t "${params.APP_KEY}" .
 
-    // Usar el app-key como nombre de contenedor
+    # Usar el app-key como nombre de contenedor
     # Parar y eliminar contenedor si existe
     if sudo docker ps -a --format '{{.Names}}' | grep -q '^${params.APP_KEY}\$'; then 
         sudo docker stop ${params.APP_KEY} || true
