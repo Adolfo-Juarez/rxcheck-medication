@@ -84,6 +84,7 @@ EOF
 
                     // ✅ Agregar manualmente las variables requeridas desde params
                     envContent += """
+# Variables requeridas
 PORT=${params.CONTAINER_PORT}
 NODE_NAME=${params.APP_KEY}
 """.trim()
