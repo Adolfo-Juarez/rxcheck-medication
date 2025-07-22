@@ -10,7 +10,7 @@ const server = express();
 
 server.use(
   cors({
-    origin: ["*"],
+    origin: "*",
     methods: ["*"],
     preflightContinue: false,
     optionsSuccessStatus: 204,
